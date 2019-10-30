@@ -61,6 +61,32 @@ size_t Network::random_connect(const double &mean_deg, const double &mean_streng
     }
     return num_links;
 }
+std::pair<size_t, double> Network::degree(const size_t& i) const
+{
+	std::vector<std::pair<size_t, double> > neighbors_tab(neighbors(i));
+	double intensity;
+	size_t nb_neighbors(neighbors_tab.size()); 
+	
+	for(auto neighbor : neighbors_tab) {
+		intensity += neighbor.second;
+	}
+	return std::pair<size_t, double>({nb_neighbors, intensity});
+	
+}
+
+std::vector<std::pair<size_t, double> > Network::neighbors(const size_t& i) const
+{
+	std::vector<std::pair<size_t, double> > neighbors_tab;
+	double intensity;
+
+	for(size_t m(0); m < links.size() ; ++m) {
+		if(links.count({i, m}) > 0) { //passe in the entire links to find the correct keys which correspond to connection between two neurons
+			intensity = links.at({i, m});
+			neighbors_tab.push_back({m, intensity});
+			}
+		}
+		return neighbors_tab;	
+}
 
 std::vector<double> Network::potentials() const {
     std::vector<double> vals;
@@ -128,3 +154,35 @@ void Network::print_traj(const int time, const std::map<std::string, size_t> &_n
             }
     (*_out) << std::endl;
 }
+std::set<size_t> Network::step(const std::vector<double>& noise)
+{
+	std::set<size_t> index;
+	for(size_t i(0); i < neurons.size(); ++i) {
+		if(neurons[i].firing()) { 
+			index.insert(i);
+			neurons[i].reset();
+		} else { 
+		
+	//for(size_t i(0); i < neurons.size(); ++i) {
+				std::vector<std::pair<size_t, double> > neighbors_tab(neighbors(i));
+				double intensity;
+			
+				for(auto neighbor : neighbors_tab) {
+					if(neurons[neighbor.first].firing()) {
+						intensity += 0.5*neighbor.second;
+					}
+				}
+		
+				if(neurons[i].is_inhibitory()){
+					neurons[i].input(0.4*noise[i] + intensity);
+				} else {
+					neurons[i].input(noise[i] + intensity);
+				}
+			neurons[i].step();
+		}
+	
+	}	
+		
+	return index;
+}
+
