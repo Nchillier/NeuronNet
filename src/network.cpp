@@ -163,13 +163,16 @@ std::set<size_t> Network::step(const std::vector<double>& noise)
 			neurons[i].reset();
 		} else { 
 		
-	//for(size_t i(0); i < neurons.size(); ++i) {
 				std::vector<std::pair<size_t, double> > neighbors_tab(neighbors(i));
 				double intensity;
 			
 				for(auto neighbor : neighbors_tab) {
 					if(neurons[neighbor.first].firing()) {
-						intensity += 0.5*neighbor.second;
+						if(neurons[neighbor.first].is_inhibitory()) {
+							intensity += neighbor.second; //intensity has already the signe minus if it's a inhibitor 
+						} else {
+							intensity += 0.5*neighbor.second;
+						}
 					}
 				}
 		
